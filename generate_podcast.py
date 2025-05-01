@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 from gtts import gTTS
 from openai import AzureOpenAI
+from google.cloud import texttospeech
 
 from keys import LLM_ENDPOINT, LLM_API_KEY, API_VERSION, MODEL_DEPLOYMENT
 
@@ -11,6 +12,8 @@ client = AzureOpenAI(
     azure_endpoint=LLM_ENDPOINT,
     api_key=LLM_API_KEY,
 )
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_creds.json"
 
 # Функция генерации текста по словарю
 
@@ -41,11 +44,36 @@ def generate_text_from_vocab(
     )
     return response.choices[0].message.content
 
-# Функция озвучки текста через Google Translate TTS
-def tts_gtts(text: str, output_path: Path, lang: str = "en"):
-    tts = gTTS(text=text, lang=lang)
-    tts.save(str(output_path))
-    print(f"Saved podcast: {output_path}")
+# Функция озвучки текста через Google Translate TTS - беспалтно безлимитно
+# def tts_gtts(text: str, output_path: Path, lang: str = "en"):
+#     tts = gTTS(text=text, lang=lang)
+#     tts.save(str(output_path))
+#     print(f"Saved podcast: {output_path}")
+
+# Функция озвучки текста через Google Cloud Service
+def tts_google(text: str, output_path: str = "output.mp3", lang_code: str = "en-US", voice_name: str = "en-US-Chirp3-HD-Zephyr"):
+    client = texttospeech.TextToSpeechClient()
+
+    synthesis_input = texttospeech.SynthesisInput(text=text)
+
+    voice = texttospeech.VoiceSelectionParams(
+        language_code=lang_code,
+        name=voice_name
+    )
+
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3
+    )
+
+    response = client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config
+    )
+
+    with open(output_path, "wb") as out:
+        out.write(response.audio_content)
+        # print(f"Сохранено: {output_path}")
 
 
 def main():
@@ -79,13 +107,12 @@ def main():
 
         # Озвучиваем
         try:
-            tts_gtts(text, output_file, lang="en")
+            tts_google(text, output_file, lang_code="en-US")
         except Exception as e:
             print(f"Error generating TTS for {csv_file.name}: {e}")
             continue
 
     print("All done!")
-
 
 if __name__ == '__main__':
     main()
