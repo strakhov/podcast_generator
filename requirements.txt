@@ -1,3 +1,4 @@
 pandas==2.2.3
 gtts==2.5.4
 openai==1.76.2
+python-dotenv==1.1.0

@@ -2,24 +2,30 @@ import os
 from pathlib import Path
 import pandas as pd
 from gtts import gTTS
-from openai import AzureOpenAI
+# from openai import AzureOpenAI
+from openai import OpenAI
 from google.cloud import texttospeech
 
-from keys import LLM_ENDPOINT, LLM_API_KEY, API_VERSION, MODEL_DEPLOYMENT
+# from keys import LLM_ENDPOINT, LLM_API_KEY, API_VERSION, MODEL_DEPLOYMENT
 
-client = AzureOpenAI(
-    api_version=API_VERSION,
-    azure_endpoint=LLM_ENDPOINT,
-    api_key=LLM_API_KEY,
-)
+from dotenv import load_dotenv
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_creds.json"
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# client = AzureOpenAI(
+#     api_version=API_VERSION,
+#     azure_endpoint=LLM_ENDPOINT,
+#     api_key=LLM_API_KEY,
+# )
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "podcast-generator-458516-be67f9964d96.json"
 
 # Функция генерации текста по словарю
 
 def generate_text_from_vocab(
     df: pd.DataFrame,
-    client: AzureOpenAI,
+    client: OpenAI,
     deployment: str,
     system_prompt: str = "You are a helpful assistant.",
     user_template: str = "Create an interesting text using these words and idioms: {vocab}",
@@ -36,19 +42,13 @@ def generate_text_from_vocab(
     ]
 
     response = client.chat.completions.create(
-        model=deployment,
+        model="gpt-4o",
         messages=messages,
         max_tokens=max_tokens,
         temperature=temperature,
         top_p=top_p,
     )
     return response.choices[0].message.content
-
-# Функция озвучки текста через Google Translate TTS - беспалтно безлимитно
-# def tts_gtts(text: str, output_path: Path, lang: str = "en"):
-#     tts = gTTS(text=text, lang=lang)
-#     tts.save(str(output_path))
-#     print(f"Saved podcast: {output_path}")
 
 # Функция озвучки текста через Google Cloud Service
 def tts_google(text: str, output_path: str = "output.mp3", lang_code: str = "en-US", voice_name: str = "en-US-Chirp3-HD-Zephyr"):
@@ -97,7 +97,7 @@ def main():
 
         # Генерируем текст
         try:
-            text = generate_text_from_vocab(df, client, MODEL_DEPLOYMENT)
+            text = generate_text_from_vocab(df, client, deployment='gpt-4o')
         except Exception as e:
             print(f"Error generating text for {csv_file.name}: {e}")
             continue

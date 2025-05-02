@@ -2,6 +2,8 @@
 
 0.1) В keys.py указать LLM_ENDPOINT, LLM_API_KEY, API_VERSION, MODEL_DEPLOYMENT
 
+0.2) в папке с проектом должен лежать google_creds.json
+
 1) положить в папку input csv-файл со столбцом words, в котором перечислены ключевые слова, идиомы, etc
 
 2) 
