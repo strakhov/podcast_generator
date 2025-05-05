@@ -16,6 +16,9 @@ GOOGLE_CREDENTIALS_FILE=podcast-generator-458516-be67f9964d96.json
 
 2) docker-compose up -d --build
 
+3) запуск интерфейса
+streamlit run streamlit_app.py
+
 
 Либо сборка/запуск через Dockerfile:
 2) 
