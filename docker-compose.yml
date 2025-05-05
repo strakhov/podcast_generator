@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  podcast-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: podcast-service
+    ports:
+      - '8000:8000'
+    # переменные окружения, берутся из .env или из хоста
+    environment:
+      # ваш OpenAI API key
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # путь внутри контейнера к смонтированному Google‑ключу
+      GOOGLE_APPLICATION_CREDENTIALS: /app/${GOOGLE_CREDENTIALS_FILE}
+      # необязательные варианты голосов
+      INTERVIEWER_VOICE: ${INTERVIEWER_VOICE:-en-US-Wavenet-F}
+      GUEST_VOICE:       ${GUEST_VOICE:-en-US-Wavenet-D}
+    # монтируем JSON с сервисным аккаунтом
+    volumes:
+      - ./${GOOGLE_CREDENTIALS_FILE}:/app/${GOOGLE_CREDENTIALS_FILE}:ro
+    restart: unless-stopped

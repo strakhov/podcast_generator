@@ -1,18 +1,21 @@
 # Используем официальный образ Python
-FROM python:3.9.21-slim
+FROM python:3.9-slim
 
-# Рабочая директория
+# Системные зависимости для pydub
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Копируем и устанавливаем зависимости
-COPY requirements.txt ./
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходники
-COPY . ./
+# Копируем весь код
+COPY . .
 
-# Создаём папки input/output, если их нет
-RUN mkdir -p input output
+EXPOSE 8000
 
-# По умолчанию запускаем скрипт генерации подкастов
-CMD ["python", "generate_podcast.py"]
+# Запускаем Uvicorn, указывая файл generate_podcast.py
+CMD ["uvicorn", "generate_podcast:app", "--host", "0.0.0.0", "--port", "8000"]
