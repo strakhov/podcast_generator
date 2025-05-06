@@ -48,20 +48,24 @@ system_prompt = st.text_input(
     value="You are a helpful assistant that creates interview Q&A"
 )
 
-model = st.selectbox(
-    "Модель LLM",
-    options=["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
-    index=0
-)
+model = "gpt-4o"
+st.markdown(f"**Используемая модель LLM:** `{model}`")
 
-interviewer_voice = st.text_input(
-    "Голос Interviewer (Google TTS)",
-    value=os.getenv("INTERVIEWER_VOICE", "en-US-Wavenet-F")
-)
-guest_voice = st.text_input(
-    "Голос Guest (Google TTS)",
-    value=os.getenv("GUEST_VOICE", "en-US-Wavenet-D")
-)
+available_voices = ["en-US-Wavenet-A", 
+                    "en-US-Wavenet-B", 
+                    "en-GB-Wavenet-C", 
+                    'en-US-Wavenet-D', 
+                    'en-US-Wavenet-E', 
+                    'en-US-Wavenet-F', 
+                    'en-US-Wavenet-G', 
+                    'en-US-Wavenet-H', 
+                    'en-US-Wavenet-I', 
+                    'en-US-Wavenet-J',
+                    'en-US-Chirp3-HD-Achernar',
+                    'en-US-Chirp3-HD-Achird']
+
+interviewer_voice = st.selectbox("INTERVIEWER_VOICE", available_voices, index=0)
+guest_voice = st.selectbox("GUEST_VOICE", available_voices, index=1)
 
 if st.button("🚀 Generate Podcast"):
     # 1) Получаем исходный текст
