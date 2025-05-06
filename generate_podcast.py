@@ -15,7 +15,14 @@ from openai import OpenAI
 from google.cloud import texttospeech
 from dotenv import load_dotenv
 
+from pydantic import BaseModel
+from typing import List, Literal
+
 load_dotenv()
+
+class Turn(BaseModel):
+    speaker: Literal["Interviewer","Guest"]
+    text: str
 
 app = FastAPI()
 
@@ -50,32 +57,6 @@ async def generate_text_from_vocab(df, client, model="gpt-4o",
     )
 
 # --- Асинхронные обёртки для LLM ---
-# async def generate_text_from_vocab(
-#     df: pd.DataFrame,
-#     client: OpenAI,
-#     model: str = "gpt-4o",
-#     system_prompt: str = "You are a helpful assistant.",
-#     user_template: str = (
-#         "Create an interesting text using these words and idioms: {vocab}. "
-#         "In your response there must be only generated text with no hellos, good-byes or any other comments."
-#     ),
-#     max_tokens: int = 1024,
-# ) -> str:
-#     words = df['words'].dropna().astype(str).tolist()
-#     vocab = ", ".join(words)
-#     messages = [
-#         {"role": "system", "content": system_prompt},
-#         {"role": "user",   "content": user_template.format(vocab=vocab)},
-#     ]
-#     resp = await client.chat.completions.acreate(
-#         model=model,
-#         messages=messages,
-#         max_tokens=max_tokens,
-#         temperature=0.7,
-#         top_p=1.0,
-#     )
-#     return resp.choices[0].message.content
-
 def _sync_generate_interview_qa(text, client, model, system_prompt, max_tokens):
     resp = client.chat.completions.create(
         model=model,
@@ -104,35 +85,6 @@ async def generate_interview_qa(text, client, model="gpt-4o",
         _sync_generate_interview_qa,
         text, client, model, system_prompt, max_tokens
     )
-
-# async def generate_interview_qa(
-#     text: str,
-#     client: OpenAI,
-#     model: str = "gpt-4o",
-#     system_prompt: str = "You are a journalist and an expert in creating interviews.",
-#     max_tokens: int = 2048,
-# ) -> str:
-#     messages = [
-#         {"role": "system", "content": system_prompt},
-#         {
-#             "role": "user",
-#             "content": (
-#                 "Here is the text for interview creation:\n\n"
-#                 f"{text}\n\n"
-#                 "Please create 5-7 interesting questions for a podcast based on the text, "
-#                 "and write the expert answers.\n"
-#                 "Format:\nQ: <question>\nA: <answer>\n"
-#             )
-#         }
-#     ]
-#     resp = await client.chat.completions.acreate(
-#         model=model,
-#         messages=messages,
-#         max_tokens=max_tokens,
-#         temperature=0.7,
-#         top_p=1.0,
-#     )
-#     return resp.choices[0].message.content
 
 def _sync_humanize_dialogue(qa_text, client, model, system_prompt):
     user_prompt = (
@@ -173,47 +125,6 @@ async def humanize_dialogue(qa_text, client, model="gpt-4o",
         _sync_humanize_dialogue,
         qa_text, client, model, system_prompt
     )
-
-# async def humanize_dialogue(
-#     qa_text: str,
-#     client: OpenAI,
-#     model: str = "gpt-4o",
-#     system_prompt: str = (
-#         "You are a scriptwriter and dialogue editor. "
-#         "Transform the Q&A into a lively, natural-sounding interview with "
-#         "pauses, interruptions, interjections, clarifications, and genuine reactions."
-#     ),
-# ) -> list[dict]:
-#     user_prompt = (
-#         "Here is the original Q&A:\n\n"
-#         f"{qa_text}\n\n"
-#         "Rewrite this as a live conversation between Interviewer and Guest. "
-#         "Return strictly a JSON array of objects with fields:\n"
-#         "  - speaker: \"Interviewer\" or \"Guest\"\n"
-#         "  - text: the utterance\n"
-#         "Do not add any extra text—only the JSON array."
-#     )
-#     resp = await client.chat.completions.acreate(
-#         model=model,
-#         messages=[
-#             {"role": "system", "content": system_prompt},
-#             {"role": "user",   "content": user_prompt},
-#         ],
-#         temperature=0.7,
-#         max_tokens=4096,
-#         top_p=1.0,
-#     )
-#     raw = resp.choices[0].message.content.strip()
-
-#     # Strip markdown fences and extract JSON array
-#     raw = re.sub(r"^```+json\s*|\s*```+$", "", raw, flags=re.IGNORECASE).strip()
-#     start = raw.find('[')
-#     end   = raw.rfind(']')
-#     if start == -1 or end == -1:
-#         raise ValueError(f"JSON array not found in model output:\n{raw}")
-#     json_str = raw[start:end+1]
-#     return json.loads(json_str)
-
 
 # --- Синхронная функция для TTS и склейки ---
 def tts_google(
@@ -325,3 +236,19 @@ async def generate_podcast_endpoint(
     except Exception as e:
         shutil.rmtree(tmpdir, True)
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/generate-dialogue/", response_model=List[Turn])
+async def generate_dialogue_endpoint(
+    file: UploadFile = File(None),
+    text: str = None
+):
+    if file:
+        df = pd.read_csv(file.file)
+        text0 = await generate_text_from_vocab(df, openai_client)
+    elif text:
+        text0 = text
+    else:
+        raise HTTPException(400, "Need either file or text")
+    qa     = await generate_interview_qa(text0, openai_client)
+    dialog = await humanize_dialogue(qa, openai_client)
+    return dialog
