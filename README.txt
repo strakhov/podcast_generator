@@ -6,35 +6,15 @@
 OPENAI_API_KEY=sk-...
 GOOGLE_CREDENTIALS_FILE=podcast-generator-458516-be67f9964d96.json
 
-# опционально, если хотите задать другие голоса:
-# INTERVIEWER_VOICE=en-US-Wavenet-F #если не указать, возьмет значение по умолчанию
-# GUEST_VOICE=en-US-Wavenet-D #если не указать, возьмет значение по умолчанию
-
 0.2) рядом с .env файлом положи podcast-generator-458516-be67f9964d96.json
 
-1) положить в папку input csv-файл со столбцом words, в котором перечислены ключевые слова, идиомы, etc
+1) подготовить csv-файл со столбцом words, в котором перечислены ключевые слова, идиомы, etc. Либо просто набор ключевых слов, тем, опорный текст
 
-2) docker-compose up -d --build
+2) запуск бэкенд сервиса
+docker-compose up -d --build
 
-ИЛИ после шага 0.2)
-
-1.1) запуск интерфейса
+3) запуск интерфейса
 streamlit run streamlit_app.py
 
 
-Либо сборка/запуск через Dockerfile:
-2.2) 
-# Сборка образа
-docker build -t podcast-service .
-
-3.2)
-# Запуск контейнера
-docker run -d \
-  --name podcast-service \
-  -p 8000:8000 \
-  -v /путь/до/google_creds.json:/app/podcast-generator-458516-be67f9964d96.json:ro \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/app/podcast-generator-458516-be67f9964d96.json \
-  -e OPENAI_API_KEY="sk-ВАШ_КЛЮЧ" \
-  podcast-service
-
-4) забрать готовый подкаст в папке output
+4) забрать скачать готовый подкаст
