@@ -1,0 +1,72 @@
+version: '3.8'
+
+networks:
+  shared_net:
+    driver: bridge
+
+volumes:
+  shared_output:
+  shared_temp:
+  langflow-data:
+  langflow-postgres:
+
+services:
+
+  langflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: langflow
+    depends_on:
+      - postgres
+    networks:
+      - shared_net
+    volumes:
+      - langflow-data:/app/langflow
+      - shared_output:/app/outputs
+      - shared_temp:/app/temp
+      - ./podcast-generator-458516-be67f9964d96.json:/app/langflow/podcast-generator-458516-be67f9964d96.json:ro
+    ports:
+      - "7860:7860"
+    environment:
+      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@postgres:5432/langflow
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/langflow/podcast-generator-458516-be67f9964d96.json
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: langflow
+      POSTGRES_PASSWORD: langflow
+      POSTGRES_DB: langflow
+    networks:
+      - shared_net
+    volumes:
+      - langflow-postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  streamlit:
+    image: python:3.9-slim
+    container_name: streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      - langflow
+    networks:
+      - shared_net
+
+    # ❶ Монтируем весь проект внутрь /app
+    volumes:
+      - ./:/app                        # <-- здесь ваш streamlit_app.py
+      - shared_output:/app/shared/output
+      - shared_temp:/app/shared/temp
+
+    working_dir: /app                  # ❷ Указываем рабочую директорию
+
+    environment:
+      - BACKEND_URL=http://langflow:7860
+
+    command: >
+      sh -c "pip install --no-cache-dir streamlit requests python-dotenv &&
+             streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0"

@@ -17,4 +17,30 @@ docker-compose up -d --build
 streamlit run streamlit_app.py
 
 
-4) забрать скачать готовый подкаст
+4) скачать готовый подкаст
+
+
+
+Запуск langflow:
+
+cd langflow/docker_example
+docker compose up
+
+Langflow is now accessible at http://localhost:7860/.
+
+
+
+Для запуска PodcastGenerator в langflow:
+
+1) внести изменения в Dockerfile и docker-compose.yml - там прописана установка недостающих зависимостей в окружение langflow и др.
+
+2) положить рядом с Dockerfile и docker-compose.yml файлыЖ
+ - podcast-generator-458516-be67f9964d96.json с ключами доступа к google.cloud
+ - requirements.txt
+
+3) запустить langflow командой
+docker compose up
+
+4) вставить OpenAI_API_Key там, где надо
+
+После отработки конвейера mp3-файл с подкастом будет в корневой папке контейнера langflow

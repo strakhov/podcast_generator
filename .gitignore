@@ -1,7 +1,10 @@
 __pycache__
 .env
+custom_components_for_langflow.py
+Dockerfile copy
 generate_podcast_v1_stable.py
 keys.py
 poc.ipynb
 google_creds.json
 podcast-generator-458516-be67f9964d96.json
+streamlit_app_v1.py

@@ -20,8 +20,8 @@ OUTPUT_DIR = Path(os.getenv("SHARED_OUTPUT", "./output"))
 st.title("🎙️ Podcast Generator")
 
 # --- Источник входных данных ---
-uploaded_file = st.file_uploader("1) Загрузите CSV (колонка 'words')", type="csv")
-input_text    = st.text_area("2) Или вставьте текст для интервью", height=200)
+# uploaded_file = st.file_uploader("1) Загрузите CSV (колонка 'words')", type="csv")
+input_text    = st.text_area("2) Вставьте текст или набор слов для создания интервью на их основе", height=200)
 
 # --- Параметры генерации ---
 length_minutes = st.slider(
@@ -34,8 +34,8 @@ st.markdown("---")
 # Кнопка старта
 if st.button("🚀 Запустить генерацию подкаста"):
     # Валидируем ввод
-    if not uploaded_file and not input_text.strip():
-        st.error("Нужно либо загрузить CSV, либо вставить текст")
+    if not input_text.strip():
+        st.error("Необходимо вставить текст")
         st.stop()
 
     # Генерируем уникальный идентификатор задачи
@@ -49,19 +49,22 @@ if st.button("🚀 Запустить генерацию подкаста"):
         "length": length_minutes
     }
 
-    if uploaded_file:
-        # CSV с набором слов
-        files = {"file": ("words.csv", uploaded_file.getvalue(), "text/csv")}
-    else:
-        # Текст напрямую
-        data["text"] = input_text
+    # if uploaded_file:
+    #     # Читаем CSV прямо в память и конвертируем в список слов
+    #     import pandas as pd
+    #     df = pd.read_csv(uploaded_file)
+    #     words_list = df['words'].dropna().astype(str).tolist()
+    #     data["words"] = words_list
+    # elif input_text.strip():
+    data["text"] = input_text
 
-    # Отправляем webhook-запрос на запуск конвейера
+    # Отправляем webhook-запрос на запуск конвейера "http://localhost:7860/api/v1/webhook/4a71aea8-dbc8-4118-8bb3-829960a56edb"
+    
     try:
         resp = requests.post(
-            f"{BACKEND_URL}/api/v1/webhook/",
-            json=data if files is None else None,
-            files=files,
+            f"{BACKEND_URL}/api/v1/webhook/4a71aea8-dbc8-4118-8bb3-829960a56edb",
+            json=data,
+            headers={"Content-Type": "application/json"},
             timeout=10
         )
         resp.raise_for_status()
@@ -75,8 +78,9 @@ if st.button("🚀 Запустить генерацию подкаста"):
     progress = st.progress(0)
     status_text = st.empty()
 
-    target_file = OUTPUT_DIR / f"podcast_{uid}.mp3"
-    total_wait = length_minutes * 60  # максимум ждем столько же секунд, сколько длина
+    # target_file = OUTPUT_DIR / f"podcast_{uid}.mp3"
+    target_file = Path("/app/shared/output") / f"podcast_{uid}.mp3"
+    total_wait = length_minutes * 60 * 5  # максимум ждем столько же секунд, сколько длина х5
     elapsed = 0
 
     # Опрашиваем файл каждую секунду
