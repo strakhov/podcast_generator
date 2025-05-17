@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # URL вашего Langflow-сервиса
-BACKEND_URL = st.text_input(
-    "Backend URL",
-    value=os.getenv("BACKEND_URL", "http://langflow:7860")
-)
+# BACKEND_URL = st.text_input(
+#     "Backend URL",
+#     value=os.getenv("BACKEND_URL", "http://langflow:7860")
+# )
 
 # Папка, смонтированная как общий volume между контейнерами
 OUTPUT_DIR = Path(os.getenv("SHARED_OUTPUT", "./output"))
@@ -22,6 +22,16 @@ st.title("🎙️ Podcast Generator")
 # --- Источник входных данных ---
 # uploaded_file = st.file_uploader("1) Загрузите CSV (колонка 'words')", type="csv")
 input_text    = st.text_area("2) Вставьте текст или набор слов для создания интервью на их основе", height=200)
+
+# --- Выбор голосов для озвучки ---
+available_voices = [
+    "en-US-Wavenet-D", "en-US-Wavenet-C", "en-US-Wavenet-F", "en-US-Wavenet-J", "en-US-Studio-O", 
+    "en-US-Chirp3-HD-Pulcherrima", "en-US-Chirp3-HD-Zephyr", "en-US-Standard-B",
+    "en-US-Wavenet-E", "en-US-Chirp3-HD-Schedar", "en-US-Chirp3-HD-Gacrux", "en-US-Wavenet-G",
+]
+
+iv = st.selectbox("Interviewer voice", available_voices, index=0)
+gv = st.selectbox("Guest voice",        available_voices, index=1)
 
 # --- Параметры генерации ---
 length_minutes = st.slider(
@@ -44,18 +54,13 @@ if st.button("🚀 Запустить генерацию подкаста"):
 
     # Подготавливаем payload
     files = None
-    data  = {
+    data = {
         "uid": uid,
-        "length": length_minutes
+        "length": length_minutes,
+        "interviewer_voice": iv,
+        "guest_voice": gv
     }
 
-    # if uploaded_file:
-    #     # Читаем CSV прямо в память и конвертируем в список слов
-    #     import pandas as pd
-    #     df = pd.read_csv(uploaded_file)
-    #     words_list = df['words'].dropna().astype(str).tolist()
-    #     data["words"] = words_list
-    # elif input_text.strip():
     data["text"] = input_text
 
     # Отправляем webhook-запрос на запуск конвейера "http://localhost:7860/api/v1/webhook/4a71aea8-dbc8-4118-8bb3-829960a56edb"
@@ -88,26 +93,69 @@ if st.button("🚀 Запустить генерацию подкаста"):
         if target_file.exists():
             progress.progress(100)
             status_text.success("Готово! Ваш подкаст сгенерирован.")
+            
+            try:
+                # Показываем транскрипцию
+                response_data = resp.json()
+                transcription = response_data.get("transcription", {}).get("dialogue", [])
+                
+                if transcription and isinstance(transcription, list):
+                    with st.expander("📝 Показать полную транскрипцию диалога", expanded=True):
+                        for i, turn in enumerate(transcription):
+                            speaker = turn.get("speaker", "Unknown Speaker")
+                            text = turn.get("text", "")
+                            
+                            # Стилизация для разных участников
+                            if speaker.lower() == "interviewer":
+                                st.markdown(f"""
+                                <div style="
+                                    padding: 10px;
+                                    border-left: 3px solid #4CAF50;
+                                    margin: 10px 0;
+                                    background: #f8f9fa;
+                                ">
+                                    <strong>🎙️ {speaker}</strong><br>
+                                    {text}
+                                </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"""
+                                <div style="
+                                    padding: 10px;
+                                    border-left: 3px solid #2196F3;
+                                    margin: 10px 0;
+                                    background: #f8f9fa;
+                                ">
+                                    <strong>🎧 {speaker}</strong><br>
+                                    {text}
+                                </div>
+                                """, unsafe_allow_html=True)
+                            st.write("---")
+                else:
+                    st.warning("Транскрипция не найдена в ответе сервера")
+            
+            except Exception as e:
+                st.error(f"Ошибка при обработке транскрипции: {str(e)}")
+
+            # Показываем аудио
+            with open(target_file, "rb") as f:
+                audio_bytes = f.read()
+            
+            st.audio(audio_bytes, format="audio/mp3")
+            st.download_button(
+                "⬇️ Скачать подкаст",
+                data=audio_bytes,
+                file_name=f"podcast_{uid}.mp3",
+                mime="audio/mp3"
+            )
             break
 
-        # Обновляем прогресс как отношение прошедшего времени к max
+        # Обновляем прогресс
         pct = int((elapsed / total_wait) * 100)
         progress.progress(pct)
-        status_text.info(f"Генерация... ждём файл (elapsed={elapsed}s)")
+        status_text.info(f"Генерация... прошло {elapsed} секунд")
         time.sleep(1)
         elapsed += 1
     else:
         status_text.error("Превышено время ожидания. Попробуйте ещё раз позже.")
         st.stop()
-
-    # Предлагаем скачать
-    with open(target_file, "rb") as f:
-        audio_bytes = f.read()
-
-    st.audio(audio_bytes, format="audio/mp3")
-    st.download_button(
-        "⬇️ Скачать подкаст",
-        data=audio_bytes,
-        file_name=f"podcast_{uid}.mp3",
-        mime="audio/mp3"
-    )
