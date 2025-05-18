@@ -14,6 +14,8 @@ load_dotenv()
 #     value=os.getenv("BACKEND_URL", "http://langflow:7860")
 # )
 
+BACKEND_URL = os.getenv("BACKEND_URL", "http://langflow:7860")
+
 # Папка, смонтированная как общий volume между контейнерами
 OUTPUT_DIR = Path(os.getenv("SHARED_OUTPUT", "./output"))
 
