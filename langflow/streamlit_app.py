@@ -87,6 +87,8 @@ if st.button("🚀 Запустить генерацию подкаста"):
             timeout=10
         )
         resp.raise_for_status()
+        execution_id = uid
+
     except Exception as e:
         st.error(f"Не удалось запустить задачу: {e}")
         st.stop()
@@ -97,59 +99,60 @@ if st.button("🚀 Запустить генерацию подкаста"):
     progress = st.progress(0)
     status_text = st.empty()
 
-    # target_file = OUTPUT_DIR / f"podcast_{uid}.mp3"
     target_file = Path("/app/shared/output") / f"podcast_{uid}.mp3"
     total_wait = length_minutes * 60 * 5  # максимум ждем столько же секунд, сколько длина х5
     elapsed = 0
 
-    # Опрашиваем файл каждую секунду
     while elapsed < total_wait:
         if target_file.exists():
             progress.progress(100)
             status_text.success("Готово! Ваш подкаст сгенерирован.")
-            
+
+            # СБОР И ПОКАЗ ТРАНСКРИПЦИИ
             try:
-                # Показываем транскрипцию
-                response_data = resp.json()
-                transcription = response_data.get("transcription", {}).get("dialogue", [])
-                
-                if transcription and isinstance(transcription, list):
-                    with st.expander("📝 Показать полную транскрипцию диалога", expanded=True):
-                        for i, turn in enumerate(transcription):
-                            speaker = turn.get("speaker", "Unknown Speaker")
-                            text = turn.get("text", "")
+                r2 = requests.get(f"{BACKEND_URL}/api/v1/executions/{execution_id}", timeout=10)
+                r2.raise_for_status()
+                transcription = r2.json().get("transcription", {}).get("dialogue", [])
+            except Exception:
+                transcription = []
+                st.warning("Не удалось получить транскрипцию от сервиса.")
+
+            if transcription:
+                with st.expander("📝 Транскрипция диалога", expanded=True):
+                    for turn in transcription:
+                        prefix = "**Interviewer:**" if turn["speaker"]=="Interviewer" else "**Guest:**"
+                        st.markdown(f"{prefix} {turn['text']}")
+            else:
+                st.info("Транскрипция отсутствует или пуста.")
                             
-                            # Стилизация для разных участников
-                            if speaker.lower() == "interviewer":
-                                st.markdown(f"""
-                                <div style="
-                                    padding: 10px;
-                                    border-left: 3px solid #4CAF50;
-                                    margin: 10px 0;
-                                    background: #f8f9fa;
-                                ">
-                                    <strong>🎙️ {speaker}</strong><br>
-                                    {text}
-                                </div>
-                                """, unsafe_allow_html=True)
-                            else:
-                                st.markdown(f"""
-                                <div style="
-                                    padding: 10px;
-                                    border-left: 3px solid #2196F3;
-                                    margin: 10px 0;
-                                    background: #f8f9fa;
-                                ">
-                                    <strong>🎧 {speaker}</strong><br>
-                                    {text}
-                                </div>
-                                """, unsafe_allow_html=True)
-                            st.write("---")
-                else:
-                    st.warning("Транскрипция не найдена в ответе сервера")
-            
-            except Exception as e:
-                st.error(f"Ошибка при обработке транскрипции: {str(e)}")
+                #             # Стилизация для разных участников
+                #             if speaker.lower() == "interviewer":
+                #                 st.markdown(f"""
+                #                 <div style="
+                #                     padding: 10px;
+                #                     border-left: 3px solid #4CAF50;
+                #                     margin: 10px 0;
+                #                     background: #f8f9fa;
+                #                 ">
+                #                     <strong>🎙️ {speaker}</strong><br>
+                #                     {text}
+                #                 </div>
+                #                 """, unsafe_allow_html=True)
+                #             else:
+                #                 st.markdown(f"""
+                #                 <div style="
+                #                     padding: 10px;
+                #                     border-left: 3px solid #2196F3;
+                #                     margin: 10px 0;
+                #                     background: #f8f9fa;
+                #                 ">
+                #                     <strong>🎧 {speaker}</strong><br>
+                #                     {text}
+                #                 </div>
+                #                 """, unsafe_allow_html=True)
+                #             st.write("---")
+                # else:
+                #     st.warning("Транскрипция не найдена в ответе сервера")
 
             # Показываем аудио
             with open(target_file, "rb") as f:
