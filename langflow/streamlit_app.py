@@ -16,6 +16,16 @@ load_dotenv()
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://langflow:7860")
 
+# looking for flow called PodcastGenerator
+def get_flow_id_by_name(name: str) -> str:
+    r = requests.get(f"{BACKEND_URL}/api/v1/flows")
+    r.raise_for_status()
+    flows = r.json()
+    for flow in flows:
+        if flow.get("name") == name:
+            return flow["id"]
+    raise RuntimeError(f"Flow with name '{name}' not found")
+
 # Папка, смонтированная как общий volume между контейнерами
 OUTPUT_DIR = Path(os.getenv("SHARED_OUTPUT", "./output"))
 
@@ -68,8 +78,10 @@ if st.button("🚀 Запустить генерацию подкаста"):
     # Отправляем webhook-запрос на запуск конвейера "http://localhost:7860/api/v1/webhook/4a71aea8-dbc8-4118-8bb3-829960a56edb"
     
     try:
+        # получаем flow_id по имени вашего рабочего потока
+        flow_id = get_flow_id_by_name("PodcastGenerator")
         resp = requests.post(
-            f"{BACKEND_URL}/api/v1/webhook/4a71aea8-dbc8-4118-8bb3-829960a56edb",
+            f"{BACKEND_URL}/api/v1/webhook/{flow_id}",
             json=data,
             headers={"Content-Type": "application/json"},
             timeout=10
