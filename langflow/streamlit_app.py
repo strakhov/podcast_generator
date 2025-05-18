@@ -8,12 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# URL вашего Langflow-сервиса
-# BACKEND_URL = st.text_input(
-#     "Backend URL",
-#     value=os.getenv("BACKEND_URL", "http://langflow:7860")
-# )
-
+# api/v1/webhook/PodcastGenerator
 BACKEND_URL = os.getenv("BACKEND_URL", "http://langflow:7860")
 
 # looking for flow called PodcastGenerator
@@ -79,9 +74,9 @@ if st.button("🚀 Запустить генерацию подкаста"):
     
     try:
         # получаем flow_id по имени вашего рабочего потока
-        flow_id = get_flow_id_by_name("PodcastGenerator")
+        # flow_id = get_flow_id_by_name("PodcastGenerator")
         resp = requests.post(
-            f"{BACKEND_URL}/api/v1/webhook/{flow_id}",
+            f"{BACKEND_URL}/api/v1/webhook/PodcastGenerator",
             json=data,
             headers={"Content-Type": "application/json"},
             timeout=10
