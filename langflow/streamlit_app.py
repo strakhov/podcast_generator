@@ -95,16 +95,20 @@ if st.button("🚀 Запустить генерацию подкаста"):
             try:
                 r2 = requests.get(f"{BACKEND_URL}/api/v1/executions/{execution_id}", timeout=10)
                 r2.raise_for_status()
-                transcription = r2.json().get("transcription", {}).get("dialogue", [])
+                resp_json = r2.json()
+                # читаем второй выход компонента
+                dialog_list = resp_json.get("dialog_list", [])
             except Exception:
-                transcription = []
+                dialog_list = []
                 st.warning("Не удалось получить транскрипцию от сервиса.")
 
-            if transcription:
+            if dialog_list:
                 with st.expander("📝 Транскрипция диалога", expanded=True):
-                    for turn in transcription:
-                        prefix = "**Interviewer:**" if turn["speaker"]=="Interviewer" else "**Guest:**"
-                        st.markdown(f"{prefix} {turn['text']}")
+                    for turn in dialog_list:
+                        speaker = turn.get("speaker", "")
+                        text = turn.get("text", "")
+                        prefix = f"**{speaker}:**"
+                        st.markdown(f"{prefix} {text}")
             else:
                 st.info("Транскрипция отсутствует или пуста.")
                             
