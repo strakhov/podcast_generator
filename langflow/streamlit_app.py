@@ -91,15 +91,21 @@ if st.button("🚀 Запустить генерацию подкаста"):
     while elapsed < total_wait:
         if target_file.exists():
             progress.progress(100)
-            status_text.success("Готово! Ваш подкаст сгенерирован.")
+            status_text.success("Готово! Ваш подкаст сгенерирован. Через секунду ниже появится транскрипция диалога и mp3-файл.")
             time.sleep(3)
 
             dialog_file = Path("/app/shared/output") / f"podcast_dialog_{uid}.txt"
             if dialog_file.exists():
                 st.subheader("📝 Транскрипция диалога")
                 # читаем весь файл и показываем как preformatted text
-                dialog_text = dialog_file.read_text(encoding="utf-8")
-                st.text(dialog_text)
+                for raw_line in dialog_file.read_text(encoding="utf-8").splitlines():
+                    # Ожидаем формат "Speaker: text"
+                    if ":" in raw_line:
+                        speaker, text = raw_line.split(":", 1)
+                        st.markdown(f"**{speaker.strip()}:** {text.strip()}")
+                    else:
+                        # На случай пустых строк или неожиданных форматов
+                        st.text(raw_line)
             else:
                 st.info("Транскрипция пока не готова или файл не найден.")
 
