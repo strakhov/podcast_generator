@@ -27,8 +27,8 @@ available_voices = [
     "en-US-Wavenet-E", "en-US-Chirp3-HD-Schedar", "en-US-Chirp3-HD-Gacrux", "en-US-Wavenet-G",
 ]
 
-iv = st.selectbox("Interviewer voice", available_voices, index=0)
-gv = st.selectbox("Guest voice",        available_voices, index=1)
+# iv = st.selectbox("Interviewer voice", available_voices, index=0)
+# gv = st.selectbox("Guest voice",        available_voices, index=1)
 
 # --- Параметры генерации ---
 length_minutes = st.slider(
@@ -91,27 +91,15 @@ if st.button("🚀 Запустить генерацию подкаста"):
             progress.progress(100)
             status_text.success("Готово! Ваш подкаст сгенерирован.")
 
-            # СБОР И ПОКАЗ ТРАНСКРИПЦИИ
-            try:
-                r2 = requests.get(f"{BACKEND_URL}/api/v1/executions/{execution_id}", timeout=10)
-                r2.raise_for_status()
-                resp_json = r2.json()
-                # читаем второй выход компонента
-                dialog_list = resp_json.get("dialog_list", [])
-            except Exception:
-                dialog_list = []
-                st.warning("Не удалось получить транскрипцию от сервиса.")
-
-            if dialog_list:
-                with st.expander("📝 Транскрипция диалога", expanded=True):
-                    for turn in dialog_list:
-                        speaker = turn.get("speaker", "")
-                        text = turn.get("text", "")
-                        prefix = f"**{speaker}:**"
-                        st.markdown(f"{prefix} {text}")
+            dialog_file = Path("/app/shared/output") / f"podcast_dialog_{uid}.txt"
+            if dialog_file.exists():
+                st.subheader("📝 Транскрипция диалога")
+                # читаем весь файл и показываем как preformatted text
+                dialog_text = dialog_file.read_text(encoding="utf-8")
+                st.text(dialog_text)
             else:
-                st.info("Транскрипция отсутствует или пуста.")
-                            
+                st.info("Транскрипция пока не готова или файл не найден.")
+
             # Показываем аудио
             with open(target_file, "rb") as f:
                 audio_bytes = f.read()
