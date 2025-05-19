@@ -11,16 +11,6 @@ load_dotenv()
 # api/v1/webhook/PodcastGenerator
 BACKEND_URL = os.getenv("BACKEND_URL", "http://langflow:7860")
 
-# looking for flow called PodcastGenerator
-def get_flow_id_by_name(name: str) -> str:
-    r = requests.get(f"{BACKEND_URL}/api/v1/flows")
-    r.raise_for_status()
-    flows = r.json()
-    for flow in flows:
-        if flow.get("name") == name:
-            return flow["id"]
-    raise RuntimeError(f"Flow with name '{name}' not found")
-
 # Папка, смонтированная как общий volume между контейнерами
 OUTPUT_DIR = Path(os.getenv("SHARED_OUTPUT", "./output"))
 
@@ -32,8 +22,8 @@ input_text    = st.text_area("2) Вставьте текст или набор �
 
 # --- Выбор голосов для озвучки ---
 available_voices = [
-    "en-US-Wavenet-D", "en-US-Wavenet-C", "en-US-Wavenet-F", "en-US-Wavenet-J", "en-US-Studio-O", 
-    "en-US-Chirp3-HD-Pulcherrima", "en-US-Chirp3-HD-Zephyr", "en-US-Standard-B",
+    "en-US-Studio-O","en-US-Chirp3-HD-Pulcherrima", "en-US-Wavenet-D", "en-US-Wavenet-C", 
+    "en-US-Wavenet-F", "en-US-Wavenet-J", "en-US-Chirp3-HD-Zephyr", "en-US-Standard-B",
     "en-US-Wavenet-E", "en-US-Chirp3-HD-Schedar", "en-US-Chirp3-HD-Gacrux", "en-US-Wavenet-G",
 ]
 
@@ -70,11 +60,9 @@ if st.button("🚀 Запустить генерацию подкаста"):
 
     data["text"] = input_text
 
-    # Отправляем webhook-запрос на запуск конвейера "http://localhost:7860/api/v1/webhook/4a71aea8-dbc8-4118-8bb3-829960a56edb"
+    # Отправляем webhook-запрос на запуск конвейера
     
     try:
-        # получаем flow_id по имени вашего рабочего потока
-        # flow_id = get_flow_id_by_name("PodcastGenerator")
         resp = requests.post(
             f"{BACKEND_URL}/api/v1/webhook/PodcastGenerator",
             json=data,
@@ -120,35 +108,6 @@ if st.button("🚀 Запустить генерацию подкаста"):
             else:
                 st.info("Транскрипция отсутствует или пуста.")
                             
-                #             # Стилизация для разных участников
-                #             if speaker.lower() == "interviewer":
-                #                 st.markdown(f"""
-                #                 <div style="
-                #                     padding: 10px;
-                #                     border-left: 3px solid #4CAF50;
-                #                     margin: 10px 0;
-                #                     background: #f8f9fa;
-                #                 ">
-                #                     <strong>🎙️ {speaker}</strong><br>
-                #                     {text}
-                #                 </div>
-                #                 """, unsafe_allow_html=True)
-                #             else:
-                #                 st.markdown(f"""
-                #                 <div style="
-                #                     padding: 10px;
-                #                     border-left: 3px solid #2196F3;
-                #                     margin: 10px 0;
-                #                     background: #f8f9fa;
-                #                 ">
-                #                     <strong>🎧 {speaker}</strong><br>
-                #                     {text}
-                #                 </div>
-                #                 """, unsafe_allow_html=True)
-                #             st.write("---")
-                # else:
-                #     st.warning("Транскрипция не найдена в ответе сервера")
-
             # Показываем аудио
             with open(target_file, "rb") as f:
                 audio_bytes = f.read()

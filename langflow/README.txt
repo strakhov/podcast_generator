@@ -7,3 +7,15 @@ docker compose up
 
 Интерфейс доступен по http://localhost:8501/
 Langflow работает на http://localhost:7860/
+
+
+
+mv /mnt/c/Users/Xiaomi/Desktop/Oleg/Docs/ML/Podcast_generator/podcast_generator.pem ~/
+
+chmod 600 ~/podcast_generator.pem
+
+ssh -i ~/podcast_generator.pem ubuntu@ec2-54-196-201-143.compute-1.amazonaws.com
+
+
+
+sudo docker-compose up -d --build
