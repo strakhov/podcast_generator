@@ -25,11 +25,9 @@ available_voices = [
     "en-US-Studio-O","en-US-Chirp3-HD-Pulcherrima"
 ]
 
-"""
-"en-US-Wavenet-D", "en-US-Wavenet-C", 
-    "en-US-Wavenet-F", "en-US-Wavenet-J", "en-US-Chirp3-HD-Zephyr", "en-US-Standard-B",
-    "en-US-Wavenet-E", "en-US-Chirp3-HD-Schedar", "en-US-Chirp3-HD-Gacrux", "en-US-Wavenet-G",
-"""
+# "en-US-Wavenet-D", "en-US-Wavenet-C", 
+#     "en-US-Wavenet-F", "en-US-Wavenet-J", "en-US-Chirp3-HD-Zephyr", "en-US-Standard-B",
+#     "en-US-Wavenet-E", "en-US-Chirp3-HD-Schedar", "en-US-Chirp3-HD-Gacrux", "en-US-Wavenet-G",
 
 iv = st.selectbox("Interviewer voice", available_voices, index=0)
 gv = st.selectbox("Guest voice",        available_voices, index=1)
@@ -94,6 +92,7 @@ if st.button("🚀 Запустить генерацию подкаста"):
         if target_file.exists():
             progress.progress(100)
             status_text.success("Готово! Ваш подкаст сгенерирован.")
+            time.sleep(3)
 
             dialog_file = Path("/app/shared/output") / f"podcast_dialog_{uid}.txt"
             if dialog_file.exists():
