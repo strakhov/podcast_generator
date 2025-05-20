@@ -33,10 +33,30 @@ iv = st.selectbox("Interviewer voice", available_voices, index=0)
 gv = st.selectbox("Guest voice",        available_voices, index=1)
 
 # --- Параметры генерации ---
-length_minutes = st.slider(
-    "Желаемая длина подкаста (минуты)",
-    min_value=1, max_value=60, value=5
+# length_minutes = st.slider(
+#     "Желаемая длина подкаста (минуты)",
+#     min_value=1, max_value=60, value=5
+# )
+
+length_option = st.select_slider(
+    "Желаемая длина подкаста",
+    options=[
+        "до 5 мин",
+        "5–10 мин",
+        "10–20 мин",
+        "30 мин",
+        "40 мин",
+        "50 мин",
+        "60 мин",
+    ],
+    value="5–10 минут"  # начальное значение
 )
+# Значение всегда одна из строк
+minutes_map = {
+    "до 5 мин": 5, "5–10 мин": 10, "10–20 мин": 20,
+    "30 мин": 30, "40 мин": 40, "50 мин": 50, "60 мин": 60,
+}
+length_minutes = minutes_map[length_option]
 
 st.markdown("---")
 
