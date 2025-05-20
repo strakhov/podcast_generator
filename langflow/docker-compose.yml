@@ -59,8 +59,8 @@ services:
     # ❶ Монтируем весь проект внутрь /app
     volumes:
       - ./:/app                        # <-- здесь ваш streamlit_app.py
-      - shared_output:/app/shared/output
-      - shared_temp:/app/shared/temp
+      - shared_output:/app/outputs
+      - shared_temp:/app/temp
 
     working_dir: /app                  # ❷ Указываем рабочую директорию
 
