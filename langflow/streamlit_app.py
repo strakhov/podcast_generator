@@ -100,9 +100,10 @@ if st.button("🚀 Запустить генерацию подкаста"):
 
     while elapsed < total_wait:
         if target_file.exists():
-            time.sleep(3)
+            status_text.success("Почти готово...")
+            time.sleep(10)
             progress.progress(100)
-            status_text.success("Готово! Ваш подкаст сгенерирован. Ниже транскрипция диалога и mp3-файл.")
+            status_text.success("Ваш подкаст сгенерирован. Ниже транскрипция диалога и mp3-файл.")
 
             dialog_file = Path("/app/outputs") / f"podcast_dialog_{uid}.txt"
             if dialog_file.exists():
