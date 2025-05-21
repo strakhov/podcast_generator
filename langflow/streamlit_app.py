@@ -100,30 +100,51 @@ if st.button("🚀 Запустить генерацию подкаста"):
 
     while elapsed < total_wait:
         if target_file.exists():
+            # дождаться, пока файл не станет ненулевого размера и стабилен
+            stable_count = 0
+            prev_size = -1
+            # ждём до 5 секунд, проверяем каждые 0.5 с
+            for _ in range(20):
+                size = target_file.stat().st_size
+                if size > 0 and size == prev_size:
+                    stable_count += 1
+                    # два подряд стабильных измерения — считаем за готово
+                    if stable_count >= 2:
+                        break
+                else:
+                    stable_count = 0
+                prev_size = size
+                time.sleep(0.5)
+            else:
+                # не дождались стабильного ненулевого размера — ещё вернёмся в основной цикл
+                elapsed += 1
+                time.sleep(1)
+                continue
+
+            # Тут файл уже готов
             status_text.success("Почти готово...")
-            time.sleep(10)
+            time.sleep(1)
             progress.progress(100)
             status_text.success("Ваш подкаст сгенерирован. Ниже транскрипция диалога и mp3-файл.")
 
+            # то же самое для транскрипции
             dialog_file = Path("/app/outputs") / f"podcast_dialog_{uid}.txt"
             if dialog_file.exists():
+                # можно аналогично проверить dialog_file.stat().st_size, но обычно .txt пишется быстро
                 st.subheader("📝 Транскрипция диалога")
-                # читаем весь файл и показываем как preformatted text
                 for raw_line in dialog_file.read_text(encoding="utf-8").splitlines():
-                    # Ожидаем формат "Speaker: text"
                     if ":" in raw_line:
                         speaker, text = raw_line.split(":", 1)
                         st.markdown(f"**{speaker.strip()}:** {text.strip()}")
                     else:
-                        # На случай пустых строк или неожиданных форматов
                         st.text(raw_line)
             else:
                 st.info("Транскрипция пока не готова или файл не найден.")
 
-            # Показываем аудио
+            # и вот теперь читаем аудио
             with open(target_file, "rb") as f:
                 audio_bytes = f.read()
-            
+
             st.audio(audio_bytes, format="audio/mp3")
             st.download_button(
                 "⬇️ Скачать подкаст",
