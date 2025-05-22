@@ -1,9 +1,11 @@
 __pycache__
+.vscode
 .env
 custom_components_for_langflow.py
 Dockerfile copy
 generate_podcast_v1_stable.py
 keys.py
+outputs
 poc.ipynb
 google_creds.json
 podcast_generator.pem

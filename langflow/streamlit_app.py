@@ -1,4 +1,6 @@
+import json
 import os
+import re
 import time
 import uuid
 import requests
@@ -52,8 +54,16 @@ st.markdown("---")
 
 # Кнопка старта
 if st.button("🚀 Запустить генерацию подкаста"):
+    def clean_text(text: str) -> str:
+        chars_to_remove_pattern = r'''[(){}\[\]"'`\\/|…—«»\n\t\u2019\u00b7\u201c\u201d]'''
+        # Заменяем совпадения на пробел
+        cleaned_text = re.sub(chars_to_remove_pattern, ' ', text)
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        return cleaned_text
+    
+    cleaned_text = clean_text(input_text)
     # Валидируем ввод
-    if not input_text.strip():
+    if not cleaned_text.strip():
         st.error("Необходимо вставить текст")
         st.stop()
 
@@ -62,22 +72,21 @@ if st.button("🚀 Запустить генерацию подкаста"):
     st.write(f"UID задачи: `{uid}`")
 
     # Подготавливаем payload
-    files = None
-    data = {
+    payload = {
         "uid": uid,
         "length": length_minutes,
         "interviewer_voice": iv,
-        "guest_voice": gv
+        "guest_voice": gv,
+        "text": cleaned_text,
     }
-
-    data["text"] = input_text
-
+    print(payload)
+    
     # Отправляем webhook-запрос на запуск конвейера
     
     try:
         resp = requests.post(
             f"{BACKEND_URL}/api/v1/webhook/PodcastGenerator",
-            json=data,
+            json=payload,
             headers={"Content-Type": "application/json"},
             timeout=10
         )
@@ -95,7 +104,7 @@ if st.button("🚀 Запустить генерацию подкаста"):
     status_text = st.empty()
 
     target_file = Path("/app/outputs") / f"podcast_{uid}.mp3"
-    total_wait = length_minutes * 60 * 2  # максимум ждем столько же секунд, сколько длина х2
+    total_wait = length_minutes * 60 * 5  # максимум ждем столько же секунд, сколько длина х2
     elapsed = 0
 
     while elapsed < total_wait:
