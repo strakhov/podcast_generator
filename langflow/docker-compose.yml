@@ -15,12 +15,15 @@ services:
   langflow:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.langflow
+    image: langflow-custom:latest
+    pull_policy: always
     container_name: langflow
     depends_on:
       - postgres
     networks:
       - shared_net
+
     volumes:
       - langflow-data:/app/langflow
       - shared_output:/app/outputs
@@ -28,8 +31,13 @@ services:
       - ./podcast-generator-458516-be67f9964d96.json:/app/langflow/podcast-generator-458516-be67f9964d96.json:ro
     ports:
       - "7860:7860"
+
     environment:
       - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@postgres:5432/langflow
+      - LANGFLOW_CONFIG_DIR=/app/langflow
+      - LANGFLOW_AUTO_LOGIN=${LANGFLOW_AUTO_LOGIN}
+      - LANGFLOW_SUPERUSER=${LANGFLOW_SUPERUSER}
+      - LANGFLOW_SUPERUSER_PASSWORD=${LANGFLOW_SUPERUSER_PASSWORD}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/langflow/podcast-generator-458516-be67f9964d96.json
 
   postgres:
@@ -55,15 +63,11 @@ services:
       - langflow
     networks:
       - shared_net
-
-    # ❶ Монтируем весь проект внутрь /app
     volumes:
-      - ./:/app                        # <-- здесь ваш streamlit_app.py
+      - ./:/app
       - shared_output:/app/outputs
       - shared_temp:/app/temp
-
-    working_dir: /app                  # ❷ Указываем рабочую директорию
-
+    working_dir: /app
     environment:
       - BACKEND_URL=http://langflow:7860
 
